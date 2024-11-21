@@ -1,0 +1,8 @@
+odin
+*.dSYM/
+*.bin
+.DS_Store
+*.a
+*.o
+*.out
+*.dylib
