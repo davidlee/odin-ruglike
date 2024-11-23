@@ -1,71 +1,106 @@
 package main
 
-import "core:fmt"
+// import "core:fmt"
 // import alg "core:math/linalg"
-// noise_3d_improve_xz(x, y, Z)
 import rl "vendor:raylib"
 
-TILE_SIZE: i32 : 8
+// how could I scope these to a particular file
+
+Command :: Direction
+
+Game :: struct {
+	cells:   ^CellStore,
+	player:  ^Player,
+	command: Direction,
+	config:  struct {
+		screen: struct {
+			width:  int,
+			height: int,
+		},
+	},
+}
 
 main :: proc() {
-	SCREEN_WIDTH :: 1048
-	SCREEN_HEIGHT :: 800
 
-	rl.InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Firedamp")
+	rl.InitWindow(cfg.screen.width, cfg.screen.height, "Firedamp")
 	defer rl.CloseWindow()
 
-
 	cells := CellStore{}
-	defer delete(cells)
 
-	init_game(&cells)
+	player := Player{}
+
+	game := Game {
+		cells   = &cells,
+		player  = &player,
+		command = .None,
+	}
+
+	init_game(&game)
 
 	rl.SetTargetFPS(60)
 
 	for !rl.WindowShouldClose() {
-		update_state()
-		draw_game(&cells)
+		update_state(&game)
+		draw_game(&game)
 	}
 }
 
-init_game :: proc(cells: ^CellStore) {
-	init_terrain(cells)
+init_game :: proc(game: ^Game) {
+	init_terrain(game.cells)
+	init_player(game)
 }
 
-update_state :: proc() {
-	process_input()
-	validate_commands()
-	perform_commands()
+update_state :: proc(game: ^Game) {
+	process_input(game)
+	apply_command(game)
+
 }
 
 
-draw_game :: proc(cells: ^CellStore) {
+draw_game :: proc(game: ^Game) {
 	rl.BeginDrawing()
 	defer rl.EndDrawing()
 
-	for cell, i in cells {
-		if cell != nil {
-			x, y, z := indexToXYZ(uint(i))
+	draw_terrain(game)
+	draw_player(game)
+}
 
-			px: i32 = i32(x) * TILE_SIZE
-			py: i32 = i32(y) * TILE_SIZE
+draw_player :: proc(game: ^Game) {
+	rl.DrawRectangle(
+		posX = i32(game.player.pos.x) * cfg.tiles.size,
+		posY = i32(game.player.pos.y) * cfg.tiles.size,
+		width = cfg.tiles.size,
+		height = cfg.tiles.size,
+		color = rl.RED,
+	)
+}
+
+draw_terrain :: proc(game: ^Game) {
+
+	for cell, i in game.cells {
+		if cell != nil {
+			x, y, _ := indexToXYZ(uint(i))
+
+			px: i32 = i32(x) * cfg.tiles.size
+			py: i32 = i32(y) * cfg.tiles.size
 
 			color: rl.Color
 
 			if cell.depth == .Solid {
-				color = rl.DARKGREEN
+				color = rl.DARKBROWN
 			} else {
 				color = rl.BLACK
 			}
 			rl.DrawRectangle(
 				posX = px,
 				posY = py,
-				width = TILE_SIZE,
-				height = TILE_SIZE,
+				width = cfg.tiles.size,
+				height = cfg.tiles.size,
 				color = color,
 			)
 		}
 	}
+
 }
 
 /* data types */
@@ -75,43 +110,29 @@ Vector2 :: struct {
 	y: f32,
 }
 
-CardinalDirection :: enum {
-	North = 0,
-	East  = 2,
-	South = 4,
-	West  = 6,
-}
-OrdinalDirection :: enum {
-	NorthEast = 1,
-	SouthEast = 3,
-	SouthWest = 5,
-	NorthWest = 7,
-}
-
-Direction :: union {
-	CardinalDirection,
-	OrdinalDirection,
+Direction :: enum {
+	None = 0,
+	North,
+	East,
+	South,
+	West,
+	NorthEast,
+	SouthEast,
+	SouthWest,
+	NorthWest,
 }
 
-// CardinalDirection := Direction[:4]
+Cardinals := [4]Direction{.North, .East, .South, .West}
+Ordinals := [4]Direction{.NorthEast, .SouthEast, .SouthWest, .NorthWest}
 
-Direction_Vectors :: [8][2]int {
-	CardinalDirection.North    = {0, -1},
-	OrdinalDirection.NorthEast = {+1, +1},
-	CardinalDirection.East     = {+1, 0},
-	OrdinalDirection.SouthEast = {+1, +1},
-	CardinalDirection.South    = {0, +1},
-	OrdinalDirection.SouthWest = {-1, +1},
-	CardinalDirection.West     = {-1, 0},
-	OrdinalDirection.NorthWest = {-1, -1},
+Direction_Vectors :: [Direction][2]int {
+	.None      = {0, 0},
+	.North     = {0, -1},
+	.NorthEast = {+1, +1},
+	.East      = {+1, 0},
+	.SouthEast = {+1, +1},
+	.South     = {0, +1},
+	.SouthWest = {-1, +1},
+	.West      = {-1, 0},
+	.NorthWest = {-1, -1},
 }
-
-//    Octant data
-//
-//    \ 1 | 2 /
-//   8 \  |  / 3
-//   -----+-----
-//   7 /  |  \ 4
-//    / 6 | 5 \
-//
-//  1 = NNW, 2 =NNE, 3=ENE, 4=ESE, 5=SSE, 6=SSW, 7=WSW, 8 = WNW

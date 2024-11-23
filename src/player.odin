@@ -1,5 +1,94 @@
 package main
+// import "core:fmt"
+import rl "vendor:raylib"
 
-process_input :: proc() {}
-validate_commands :: proc() {}
-perform_commands :: proc() {}
+XYZ :: [3]uint
+
+Player :: struct {
+	pos: XYZ, // xyz
+}
+
+init_player :: proc(game: ^Game) {
+	game.player.pos = {50, 50, 0}
+}
+
+MoveKeyMap :: struct {
+	key: rl.KeyboardKey,
+	dir: Direction,
+}
+
+MOVE_KEYS: [4]MoveKeyMap : {{.UP, .North}, {.DOWN, .South}, {.LEFT, .West}, {.RIGHT, .East}}
+
+MOVE_KEYS_SHIFTED: [4]MoveKeyMap : {
+	{.UP, .NorthWest},
+	{.DOWN, .SouthEast},
+	{.LEFT, .SouthWest},
+	{.RIGHT, .NorthEast},
+}
+
+process_input :: proc(game: ^Game) {
+	shifted := rl.IsKeyDown(.LEFT_SHIFT) || rl.IsKeyDown(.RIGHT_SHIFT)
+	keymap := shifted ? MOVE_KEYS_SHIFTED : MOVE_KEYS
+
+	for x in keymap {
+		if rl.IsKeyPressed(x.key) || rl.IsKeyPressedRepeat(x.key) {
+			game.command = x.dir
+		}
+	}
+}
+
+// only movement commands for now
+apply_command :: proc(game: ^Game) {
+
+	direction := game.command
+	if direction == nil {
+		return
+	}
+
+	new_pos, err := validate_2d_move(game.player.pos, direction, game)
+	if err != nil {return}
+
+	game.player.pos = new_pos
+	game.command = .None
+}
+
+CommandError :: enum {
+	None = 0,
+	OutOfBounds,
+	ImpassableTerrain,
+}
+
+validate_2d_move :: proc(xyz: XYZ, direction: Direction, game: ^Game) -> (XYZ, CommandError) {
+	directions := Direction_Vectors
+	delta := directions[direction]
+
+	xy: [2]int = {int(xyz.x), int(xyz.y)}
+	sum: [2]int = xy + delta
+
+	if sum.x < 0 ||
+	   sum.y < 0 ||
+	   sum.x > int(cfg.tiles.visible.x) ||
+	   sum.y > int(cfg.tiles.visible.y) ||
+	   sum.x > int(cfg.cell_store.max.x) ||
+	   sum.y > int(cfg.cell_store.max.y) {
+		return XYZ{}, .OutOfBounds
+	}
+	new_pos := XYZ{uint(sum.x), uint(sum.y), xyz.z}
+
+	new_cell := getCellByXYZ(uint(sum.x), uint(sum.y), xyz.z)
+
+
+	if false {
+		return XYZ{}, .ImpassableTerrain
+	} else {
+		return new_pos, nil
+	}
+
+	// if sum.x >= 0 && sum.y >= 0 { 	// TODO check max
+	// } else {
+	// 	return XYZ{}, .OutOfBounds
+	// }
+}
+
+
+move :: proc() {}

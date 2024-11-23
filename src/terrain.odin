@@ -4,25 +4,31 @@ import fmt "core:fmt"
 import "core:math/noise"
 // import rng "core:math/rand"
 
+// CELL_STORE_LEN :: [3]uint{255, 255, 1}
+// cfg.cell_store.size: uint : CELL_STORE_LEN.x * CELL_STORE_LEN.y * CELL_STORE_LEN.z
+
+CellStore :: [dynamic]^Cell
+
 init_terrain :: proc(cells: ^CellStore) {
 	seed: i64 : 1987298
 
-	resize(cells, CELL_STORE_SIZE)
+	resize(cells, cfg.cell_store.size)
 
-	for i in 0 ..< CELL_STORE_SIZE {
+	for i in 0 ..< cfg.cell_store.size {
 		x, y, z := indexToXYZ(i)
+
 		v := noise.Vec3{f64(x), f64(y), f64(z)}
 		n := noise.noise_3d_improve_xz(seed, v)
 
-		cell, err := new(Cell)
+		cell, err := new(Cell) // NOTE un-reaped allocation here 
 
 		if err != nil {
-			fmt.println("FAILED TO ALLOC")
+			panic("Failed allocation")
 		}
 
 		if n < 0.3 {
 			cell^ = Cell {
-				material = .Sandstone,
+				material = .Dirt,
 				depth    = .Solid,
 			}
 		} else {
@@ -33,21 +39,55 @@ init_terrain :: proc(cells: ^CellStore) {
 		}
 		cells[i] = cell
 	}
-
-	fmt.println("map done.")
 }
 
 indexToXYZ :: proc(i: uint) -> (uint, uint, uint) {
-	z: uint = i / (CELL_STORE_LEN.x * CELL_STORE_LEN.y)
-	y: uint = i / CELL_STORE_LEN.x
-	x: uint = i % CELL_STORE_LEN.x
+	max :: cfg.cell_store.max
+	z: uint = i / (max.x * max.y)
+	y: uint = i / max.x
+	x: uint = i % max.x
 	return x, y, z
 }
 
-// ZYXtoIndex :: proc(z: uint, y: uint, x: uint) -> uint {
-// 	return z * (CELL_STORE_LEN.x * CELL_STORE_LEN.y) + y * CELL_STORE_LEN.x + x
-// }
+XYZtoIndex :: proc(x: uint, y: uint, z: uint) -> uint {
+	max :: cfg.cell_store.max
+	return z * (max.x * max.y) + y * max.x + x
+	// xi, yi, zi, i: uint
+	// zi = z * max.x * max.y
+	// yi = y * max.x
+	// xi = x
+	// i = xi + yi + zi
 
+	// dx, dy, dz := indexToXYZ(i)
+	// if x != dx {
+	// 	fmt.println("x %v != %v ", x, dx)
+	// }
+	// if y != dy {
+	// 	fmt.println("y %v != %v ", y, dy)
+	// }
+	// if z != dz {
+	// 	fmt.println("z %v != %v ", z, dz)
+	// }
+
+	// fmt.println("> i %v ", i)
+}
+
+getCellByXYZ :: proc(x: uint, y: uint, z: uint) -> ^Cell {
+	i := XYZtoIndex(x, y, z)
+	return nil
+}
+
+
+Cell :: struct {
+	material: Maybe(TerrainMaterial),
+	depth:    CellFillDepth,
+	// floor:    Maybe(Floor),
+	// creature: Maybe(int),
+	// items:    []int,
+	// features: []int, // pos: floor / ceiling / wall(4) / middle ? 
+	// liquid:   Maybe(int),
+	// gas:      Maybe(int),
+}
 
 // 1 cell of rock / dirt expands to 2 cells of loose dirt / rubble
 // sand or quarried stone is 1:1
@@ -104,36 +144,25 @@ Liquid :: struct {
 	kind: LiquidSubstance,
 }
 
-
-Cell :: struct {
-	material: Maybe(TerrainMaterial),
-	depth:    CellFillDepth,
-	// floor:    Maybe(Floor),
-	// creature: Maybe(int),
-	// items:    []int,
-	// features: []int, // pos: floor / ceiling / wall(4) / middle ? 
-	// liquid:   Maybe(int),
-	// gas:      Maybe(int),
-}
-
-CELL_STORE_LEN :: [3]uint{255, 255, 1}
-CELL_STORE_SIZE: uint : CELL_STORE_LEN.x * CELL_STORE_LEN.y * CELL_STORE_LEN.z
-CellStore :: [dynamic]^Cell
-
-// FloorType :: enum {
-// 	Natural,
-// }
-
-Floor :: struct {
-	material: TerrainMaterial, // union w ..?
-}
-
 TerrainMaterial :: enum {
 	Dirt,
+	LooseDirt,
+	Sand,
 	Mud,
 	Rocks,
 	Sandstone,
 	Granite,
 	Marble,
 	Slate,
+	Limestone,
+	Basalt,
+	Quartz,
 }
+
+// FloorType :: enum {
+// 	Natural,
+// }
+
+// Floor :: struct {
+// 	material: TerrainMaterial, // union w ..?
+// }
