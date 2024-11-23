@@ -1,6 +1,6 @@
 package main
 
-import "core:fmt"
+import fmt "core:fmt"
 // import alg "core:math/linalg"
 import rl "vendor:raylib"
 
@@ -16,21 +16,35 @@ Game :: struct {
 			height: int,
 		},
 	},
+	assets:  Assets,
+}
+
+Assets :: struct {
+	sounds: struct {
+		beep: ^rl.Sound,
+	},
 }
 
 main :: proc() {
+	_ = fmt.printfln
 
 	rl.InitWindow(cfg.screen.width, cfg.screen.height, "Firedamp")
 	defer rl.CloseWindow()
+
+	rl.InitAudioDevice()
+	defer rl.CloseAudioDevice()
+
+	sound := rl.LoadSound("assets/bip.wav")
 
 	cells := CellStore{}
 
 	player := Player{}
 
 	game := Game {
-		cells   = &cells,
-		player  = &player,
+		cells = &cells,
+		player = &player,
 		command = .None,
+		assets = {sounds = {beep = &sound}},
 	}
 
 	init_game(&game)
@@ -51,9 +65,7 @@ init_game :: proc(game: ^Game) {
 update_state :: proc(game: ^Game) {
 	process_input(game)
 	apply_command(game)
-
 }
-
 
 draw_game :: proc(game: ^Game) {
 	rl.BeginDrawing()
@@ -97,7 +109,6 @@ draw_terrain :: proc(game: ^Game) {
 			)
 		}
 	}
-
 }
 
 /* data types */

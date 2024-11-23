@@ -49,10 +49,10 @@ apply_command :: proc(game: ^Game) {
 	game.command = .None
 
 	if err != nil {
+		rl.PlaySound(game.assets.sounds.beep^)
 		fmt.printfln("Invalid movement command: %v", err)
 		return
 	} else {
-
 		game.player.pos = new_pos
 	}
 

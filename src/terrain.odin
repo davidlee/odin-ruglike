@@ -9,6 +9,7 @@ CellStore :: [dynamic]^Cell
 
 init_terrain :: proc(cells: ^CellStore) {
 	seed: i64 : 1987298
+	_ = fmt.printfln
 
 	resize(cells, cfg.cell_store.size)
 
