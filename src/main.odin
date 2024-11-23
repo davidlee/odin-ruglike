@@ -1,10 +1,8 @@
 package main
 
-// import "core:fmt"
+import "core:fmt"
 // import alg "core:math/linalg"
 import rl "vendor:raylib"
-
-// how could I scope these to a particular file
 
 Command :: Direction
 
@@ -76,7 +74,6 @@ draw_player :: proc(game: ^Game) {
 }
 
 draw_terrain :: proc(game: ^Game) {
-
 	for cell, i in game.cells {
 		if cell != nil {
 			x, y, _ := indexToXYZ(uint(i))
@@ -105,11 +102,6 @@ draw_terrain :: proc(game: ^Game) {
 
 /* data types */
 
-Vector2 :: struct {
-	x: f32,
-	y: f32,
-}
-
 Direction :: enum {
 	None = 0,
 	North,
@@ -128,7 +120,7 @@ Ordinals := [4]Direction{.NorthEast, .SouthEast, .SouthWest, .NorthWest}
 Direction_Vectors :: [Direction][2]int {
 	.None      = {0, 0},
 	.North     = {0, -1},
-	.NorthEast = {+1, +1},
+	.NorthEast = {+1, -1},
 	.East      = {+1, 0},
 	.SouthEast = {+1, +1},
 	.South     = {0, +1},

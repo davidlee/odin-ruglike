@@ -4,8 +4,6 @@ import fmt "core:fmt"
 import "core:math/noise"
 // import rng "core:math/rand"
 
-// CELL_STORE_LEN :: [3]uint{255, 255, 1}
-// cfg.cell_store.size: uint : CELL_STORE_LEN.x * CELL_STORE_LEN.y * CELL_STORE_LEN.z
 
 CellStore :: [dynamic]^Cell
 
@@ -26,7 +24,7 @@ init_terrain :: proc(cells: ^CellStore) {
 			panic("Failed allocation")
 		}
 
-		if n < 0.3 {
+		if n > 0.7 {
 			cell^ = Cell {
 				material = .Dirt,
 				depth    = .Solid,
@@ -52,29 +50,19 @@ indexToXYZ :: proc(i: uint) -> (uint, uint, uint) {
 XYZtoIndex :: proc(x: uint, y: uint, z: uint) -> uint {
 	max :: cfg.cell_store.max
 	return z * (max.x * max.y) + y * max.x + x
-	// xi, yi, zi, i: uint
-	// zi = z * max.x * max.y
-	// yi = y * max.x
-	// xi = x
-	// i = xi + yi + zi
-
-	// dx, dy, dz := indexToXYZ(i)
-	// if x != dx {
-	// 	fmt.println("x %v != %v ", x, dx)
-	// }
-	// if y != dy {
-	// 	fmt.println("y %v != %v ", y, dy)
-	// }
-	// if z != dz {
-	// 	fmt.println("z %v != %v ", z, dz)
-	// }
-
-	// fmt.println("> i %v ", i)
 }
 
-getCellByXYZ :: proc(x: uint, y: uint, z: uint) -> ^Cell {
+getCellByXYZ :: proc(x: uint, y: uint, z: uint, cells: ^CellStore) -> ^Cell {
 	i := XYZtoIndex(x, y, z)
-	return nil
+	return &cells[i]^
+}
+
+isPassableTerrain :: proc(cell: ^Cell) -> bool {
+	if cell == nil {return false}
+	if cell.depth == .Solid {
+		return false
+	}
+	return true
 }
 
 

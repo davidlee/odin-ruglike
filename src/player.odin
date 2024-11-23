@@ -1,5 +1,5 @@
 package main
-// import "core:fmt"
+import "core:fmt"
 import rl "vendor:raylib"
 
 XYZ :: [3]uint
@@ -46,10 +46,16 @@ apply_command :: proc(game: ^Game) {
 	}
 
 	new_pos, err := validate_2d_move(game.player.pos, direction, game)
-	if err != nil {return}
-
-	game.player.pos = new_pos
 	game.command = .None
+
+	if err != nil {
+		fmt.printfln("Invalid movement command: %v", err)
+		return
+	} else {
+
+		game.player.pos = new_pos
+	}
+
 }
 
 CommandError :: enum {
@@ -75,19 +81,13 @@ validate_2d_move :: proc(xyz: XYZ, direction: Direction, game: ^Game) -> (XYZ, C
 	}
 	new_pos := XYZ{uint(sum.x), uint(sum.y), xyz.z}
 
-	new_cell := getCellByXYZ(uint(sum.x), uint(sum.y), xyz.z)
-
-
-	if false {
-		return XYZ{}, .ImpassableTerrain
-	} else {
+	cell := getCellByXYZ(uint(sum.x), uint(sum.y), xyz.z, game.cells)
+	if isPassableTerrain(cell) {
 		return new_pos, nil
-	}
+	} else {
+		return XYZ{}, .ImpassableTerrain
 
-	// if sum.x >= 0 && sum.y >= 0 { 	// TODO check max
-	// } else {
-	// 	return XYZ{}, .OutOfBounds
-	// }
+	}
 }
 
 
